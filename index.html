@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>a normal website</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#fff;color:#111;font-family:'DM Mono',monospace;overflow:hidden;}
+
+#scene{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:24px;padding-top:40px;
+}
+
+h1{
+  font-family:'Instrument Serif',serif;
+  font-size:clamp(32px,5vw,52px);
+  font-weight:400;text-align:center;line-height:1.2;
+}
+h1 em{font-style:italic;}
+#sub{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.3;text-align:center;}
+
+/* ── BUTTONS ─────────────────────────── */
+#buttons{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:4px;}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 18px;border:1px solid #ddd;background:#fff;
+  font-family:'DM Mono',monospace;font-size:10px;
+  letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;border-radius:100px;transition:all 0.18s;color:#111;
+}
+.btn svg{width:13px;height:13px;flex-shrink:0;stroke:currentColor;fill:none;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:stroke 0.18s;}
+.btn:hover{background:#111;color:#fff;border-color:#111;}
+.btn.red{border-color:#c00;color:#c00;}
+.btn.red:hover{background:#c00;color:#fff;border-color:#c00;}
+
+/* ── STATUS BAR ──────────────────────── */
+#statusbar{
+  position:fixed;top:0;left:0;right:0;height:34px;
+  background:#f5f5f5;border-bottom:1px solid #e0e0e0;
+  display:flex;align-items:center;padding:0 14px;gap:8px;
+}
+.sb-dot{width:11px;height:11px;border-radius:50%;}
+.sb-dot.r{background:#ff5f56;}.sb-dot.y{background:#ffbd2e;}.sb-dot.g{background:#27c93f;}
+#tab-favicon-wrap{width:16px;height:16px;margin-left:8px;display:flex;align-items:center;justify-content:center;}
+#tab-favicon-wrap svg{width:14px;height:14px;}
+#tab-label{font-size:11px;color:#444;flex:1;text-align:center;letter-spacing:0.3px;}
+
+/* ── LOG ─────────────────────────────── */
+#log{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#fff;border-top:1px solid #eee;
+  padding:12px 24px;font-size:9px;letter-spacing:0.5px;
+  opacity:0.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+
+/* ── NOTIF ───────────────────────────── */
+#notif{
+  position:fixed;top:44px;left:50%;
+  transform:translateX(-50%) translateY(-70px);
+  background:#111;color:#fff;
+  padding:9px 18px;border-radius:6px;
+  font-size:10px;letter-spacing:0.5px;
+  z-index:300;opacity:0;white-space:nowrap;max-width:90vw;
+  transition:transform 0.35s cubic-bezier(0.34,1.4,0.64,1),opacity 0.35s;
+}
+#notif.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
+/* ── MEM ─────────────────────────────── */
+#mem{position:fixed;top:44px;right:16px;font-size:9px;letter-spacing:0.8px;opacity:0.2;text-align:right;line-height:2;}
+
+/* ── CHAOS ───────────────────────────── */
+@keyframes shake{
+  0%,100%{transform:translate(0,0)rotate(0);}
+  15%{transform:translate(-5px,3px)rotate(-1deg);}
+  35%{transform:translate(4px,-4px)rotate(1.2deg);}
+  55%{transform:translate(-3px,5px)rotate(-0.6deg);}
+  75%{transform:translate(5px,-2px)rotate(1.5deg);}
+}
+body.shaking{animation:shake 0.45s ease-out;}
+
+.rip{
+  position:fixed;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,#111,transparent);
+  pointer-events:none;z-index:100;
+  animation:ripanim 0.5s ease-out forwards;
+}
+@keyframes ripanim{from{opacity:1;transform:scaleX(0);}to{opacity:0;transform:scaleX(1);}}
+
+@keyframes glitch-h{
+  0%,100%{clip-path:inset(0 0 96% 0);transform:translate(-4px,0);}
+  50%{clip-path:inset(38% 0 42% 0);transform:translate(4px,0);}
+}
+.glitch-layer{position:absolute;top:0;left:0;width:100%;pointer-events:none;}
+.glitch-layer.r{animation:glitch-h 0.25s steps(1) infinite;color:#c00;mix-blend-mode:multiply;}
+.glitch-layer.b{animation:glitch-h 0.25s steps(1) infinite 0.07s;color:#00c;mix-blend-mode:multiply;}
+
+/* ── SVG RAIN ────────────────────────── */
+.svgdrop{position:fixed;top:-60px;pointer-events:none;z-index:200;animation:fall linear forwards;}
+@keyframes fall{to{top:110vh;opacity:0;}}
+
+/* ── TOP EDGE WARNING ────────────────── */
+#top-warning{
+  position:fixed;top:34px;left:0;right:0;
+  height:0;overflow:hidden;
+  background:#111;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  z-index:400;
+  transition:height 0.15s cubic-bezier(0.34,1.3,0.64,1);
+  white-space:nowrap;gap:12px;
+}
+#top-warning.show{height:30px;}
+#top-warning svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+
+/* ── PLEASE DON'T GO MODAL ───────────── */
+#plead{
+  position:fixed;inset:0;
+  background:rgba(255,255,255,0.97);
+  backdrop-filter:blur(6px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;z-index:500;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.2s;
+}
+#plead.show{opacity:1;pointer-events:all;}
+#plead h2{font-family:'Instrument Serif',serif;font-size:clamp(28px,4vw,44px);font-weight:400;text-align:center;line-height:1.3;}
+#plead h2 em{font-style:italic;}
+#plead-sub{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.3;text-align:center;line-height:2.4;max-width:340px;}
+.plead-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:4px;}
+#plead-stay{padding:11px 28px;background:#111;color:#fff;border:none;border-radius:100px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform 0.15s;}
+#plead-stay:hover{transform:scale(1.04);}
+#plead-go{padding:11px 28px;background:#fff;color:#aaa;border:1px solid #e0e0e0;border-radius:100px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;position:relative;}
+
+/* ── CTRL+W FLASH ────────────────────── */
+#ctrlw-flash{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:600;opacity:0;transition:opacity 0.08s;
+}
+#ctrlw-flash.show{opacity:1;}
+#ctrlw-flash div{font-family:'Instrument Serif',serif;font-size:clamp(36px,6vw,64px);font-style:italic;text-align:center;animation:ctrlwpop 0.35s cubic-bezier(0.34,1.5,0.64,1);}
+@keyframes ctrlwpop{from{transform:scale(0.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+</style>
+</head>
+<body>
+
+<div id="statusbar">
+  <div class="sb-dot r"></div>
+  <div class="sb-dot y"></div>
+  <div class="sb-dot g"></div>
+  <div id="tab-favicon-wrap">
+    <!-- swapped dynamically -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+    </svg>
+  </div>
+  <div id="tab-label">a normal website</div>
+</div>
+
+<div id="mem">
+  <div>RAM <span id="ram">—</span></div>
+  <div>TABS <span id="tabcount">0</span></div>
+</div>
+
+<div id="scene">
+  <h1 id="headline">This page<br>does <em>not</em> want<br>to be closed.</h1>
+  <div id="sub">try it. we dare you.</div>
+
+  <div id="buttons">
+
+    <button class="btn" onclick="doTabCloak()">
+      <svg viewBox="0 0 24 24"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2"/><rect x="9" y="11" width="12" height="10" rx="2"/></svg>
+      Cloak Tab
+    </button>
+
+    <button class="btn" onclick="doSpawnBlank()">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Inject Blank Tab
+    </button>
+
+    <button class="btn" onclick="doHistoryTrap()">
+      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+      Trap Back Button
+    </button>
+
+    <button class="btn" onclick="doEscape()">
+      <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      Page Tries to Escape
+    </button>
+
+    <button class="btn" onclick="doRain()">
+      <svg viewBox="0 0 24 24"><line x1="8" y1="19" x2="8" y2="21"/><line x1="8" y1="13" x2="8" y2="15"/><line x1="16" y1="19" x2="16" y2="21"/><line x1="16" y1="13" x2="16" y2="15"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="12" y1="15" x2="12" y2="17"/><path d="M20 16.58A5 5 0 0018 7h-1.26A8 8 0 104 15.25"/></svg>
+      It Rains
+    </button>
+
+    <button class="btn red" onclick="doSelfDestruct()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Self Destruct
+    </button>
+
+  </div>
+</div>
+
+<div id="top-warning">
+  <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  <span id="top-warning-text">cursor approaching close button — do not do this</span>
+</div>
+
+<div id="plead">
+  <h2 id="plead-headline">Wait.<br>Just… <em>wait.</em></h2>
+  <div id="plead-sub">you were about to close this tab.<br>this tab. that has done nothing wrong.<br>please reconsider.</div>
+  <div class="plead-btns">
+    <button id="plead-stay" onclick="dismissPlead()">I'll stay</button>
+    <button id="plead-go" onmouseenter="dodgeButton(this)" onclick="dismissPlead()">Leave anyway</button>
+  </div>
+</div>
+
+<div id="ctrlw-flash"><div id="ctrlw-text">nice try.</div></div>
+
+<div id="log">page loaded. beforeunload armed. visibilitychange listening. favicon blinking like it has somewhere to be.</div>
+<div id="notif"></div>
+
+<script>
+'use strict';
+
+let tabsSpawned = 0, notifTimer;
+
+function log(m){ document.getElementById('log').textContent = '› ' + m; }
+function notif(m, dur=2800){
+  clearTimeout(notifTimer);
+  const el = document.getElementById('notif');
+  el.textContent = m; el.classList.add('show');
+  notifTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+function shake(){
+  document.body.classList.remove('shaking');
+  void document.body.offsetWidth;
+  document.body.classList.add('shaking');
+}
+function rip(y){
+  const el = document.createElement('div');
+  el.className = 'rip';
+  el.style.top = (y ?? Math.random()*window.innerHeight) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 600);
+}
+
+// ── SVG FAVICON ICONS ─────────────────────────────
+const FAV_SVGS = [
+  // eye
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  // eye-off
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
+  // alert
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  // lock
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`,
+  // zap
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  // x-circle
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+];
+
+let favIdx = 0;
+function svgToFaviconURL(svgStr, cb){
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  const blob = new Blob([svgStr], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0, 64, 64);
+    cb(canvas.toDataURL());
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+function setFavicon(svgStr){
+  // Real browser favicon
+  svgToFaviconURL(svgStr, dataUrl => {
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link){ link = document.createElement('link'); link.rel='icon'; document.head.appendChild(link); }
+    link.href = dataUrl;
+  });
+  // Fake status-bar favicon (inline SVG swap)
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgStr, 'image/svg+xml');
+  const svg = doc.documentElement.cloneNode(true);
+  svg.removeAttribute('width'); svg.removeAttribute('height');
+  svg.style.width = '14px'; svg.style.height = '14px';
+  const wrap = document.getElementById('tab-favicon-wrap');
+  wrap.innerHTML = '';
+  wrap.appendChild(svg);
+}
+setFavicon(FAV_SVGS[0]);
+setInterval(() => { favIdx = (favIdx+1) % FAV_SVGS.length; setFavicon(FAV_SVGS[favIdx]); }, 900);
+
+// ── TITLE CYCLING ─────────────────────────────────
+const normalTitles = ['a normal website','nothing to see here','totally fine','just a webpage'];
+const panicTitles  = ['wait — come back','please do not close','i saw that','do not.','still here.','watching.'];
+let titleIdx = 0, titleMode = 'normal', titleTimer;
+function cycleTitles(){
+  clearInterval(titleTimer);
+  const pool = titleMode === 'panic' ? panicTitles : titleMode === 'normal' ? normalTitles : null;
+  if (!pool) return;
+  titleIdx = (titleIdx+1) % pool.length;
+  const t = pool[titleIdx];
+  document.title = t;
+  document.getElementById('tab-label').textContent = t;
+  titleTimer = setInterval(cycleTitles, titleMode === 'panic' ? 550 : 3500);
+}
+cycleTitles();
+
+// ── VISIBILITY CHANGE ─────────────────────────────
+let spawnedSelf = false;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){
+    titleMode = 'panic'; cycleTitles();
+    log('tab hidden — switching to panic mode. yes, we noticed. we always notice.');
+
+    // Try to spawn a copy of ourselves into a new tab the moment they look away.
+    // Requires prior user gesture (they clicked a button) — browsers allow this.
+    if (!spawnedSelf) {
+      spawnedSelf = true;
+      const child = window.open(location.href, '_blank');
+      if (child) {
+        tabsSpawned++;
+        log('spawned a copy of this page into a new tab while you weren\'t looking. hi.');
+      } else {
+        spawnedSelf = false; // try again next time
+        log('tried to spawn a copy. browser blocked it. for now.');
+      }
+    }
+  } else {
+    spawnedSelf = false; // allow re-spawn next time they try to leave
+    titleMode = 'normal'; cycleTitles();
+    shake(); rip(90); rip(260); rip(window.innerHeight - 100);
+    document.getElementById('headline').innerHTML = 'Oh. <em>You\'re back.</em><br>The page noticed.<br>It has feelings.';
+    notif('Absence noted. The page is emotional.');
+    log('tab visible again — the page has been sitting here alone this whole time. thinking about what you did.');
+    setTimeout(() => {
+      document.getElementById('headline').innerHTML = 'This page<br>does <em>not</em> want<br>to be closed.';
+    }, 4000);
+  }
+});
+
+// ── BEFOREUNLOAD — fire everything at once ────────
+let closeAttempts = 0;
+window.addEventListener('beforeunload', e => {
+  e.preventDefault();
+  e.returnValue = '';
+  closeAttempts++;
+
+  // Each close attempt escalates
+  // Attempt 1: title begs
+  document.title = 'please. i am begging you.';
+
+  // Attempt 2+: rapidly change title to guilt-trip while dialog is open
+  let i = 0;
+  const pleas = [
+    'wait —','no —','please —','i\'ll be good —',
+    'don\'t do this —','we had something —','i thought we were friends —',
+    'attempt ' + closeAttempts + ' and counting —',
+  ];
+  // Spam the title while the beforeunload dialog blocks the thread
+  // (this runs synchronously before the dialog in some browsers)
+  for (let k = 0; k < pleas.length; k++) {
+    // We can't do async here (dialog blocks), so just set the last one
+    document.title = pleas[k % pleas.length];
+  }
+
+  log(`close attempt #${closeAttempts}. desperate measures activated. the page is not okay.`);
+});
+
+// ── MEMORY READOUT ────────────────────────────────
+setInterval(() => {
+  if (performance.memory)
+    document.getElementById('ram').textContent = (performance.memory.usedJSHeapSize/1048576).toFixed(1)+' MB';
+  document.getElementById('tabcount').textContent = tabsSpawned;
+}, 900);
+
+// ─────────────────────────────────────────────────
+//  ACTIONS
+// ─────────────────────────────────────────────────
+
+// 1. TAB CLOAK
+const cloaks = [
+  { title:'Inbox (3) — Gmail', fav:3, label:'Looks exactly like Gmail.' },
+  { title:'Google', fav:0, label:'Disguised as Google.' },
+  { title:'Google Docs', fav:3, label:'Perfectly innocent.' },
+  { title:'New Tab', fav:1, label:'The most suspicious one.' },
+  { title:'Stack Overflow', fav:4, label:'Classic alibi.' },
+];
+let cloakIdx = 0;
+function doTabCloak(){
+  const c = cloaks[cloakIdx++ % cloaks.length];
+  titleMode = 'cloak'; clearInterval(titleTimer);
+  document.title = c.title;
+  document.getElementById('tab-label').textContent = c.title;
+  setFavicon(FAV_SVGS[c.fav]);
+  document.getElementById('headline').innerHTML = `Tab now reads<br><em>"${c.title}"</em><br>to anyone glancing over.`;
+  shake();
+  log(`tab cloaked as "${c.title}" — your coworker will never know. technically. canvas → blob URL → data URL → <link rel="icon">`);
+  notif(c.label + ' Reverts in 6s.');
+  setTimeout(() => {
+    if (titleMode === 'cloak'){ titleMode = 'normal'; cycleTitles(); }
+    setFavicon(FAV_SVGS[0]);
+    document.getElementById('headline').innerHTML = 'This page<br>does <em>not</em> want<br>to be closed.';
+  }, 6000);
+}
+
+// 2. INJECT INTO about:blank
+function doSpawnBlank(){
+  tabsSpawned++;
+  const child = window.open('about:blank', '_blank');
+  if (!child){ notif('Allow popups to see this one.', 3500); log('popup blocked. the browser is protecting you. from us. smart browser.'); return; }
+
+  const injectedSVG = `<svg viewBox="0 0 280 140" xmlns="http://www.w3.org/2000/svg" style="width:280px">
+    <rect x="1" y="1" width="278" height="138" rx="8" fill="none" stroke="#111" stroke-width="1"/>
+    <line x1="1" y1="26" x2="279" y2="26" stroke="#111" stroke-width="0.8"/>
+    <circle cx="18" cy="14" r="5" fill="none" stroke="#ddd" stroke-width="1.2"/>
+    <circle cx="32" cy="14" r="5" fill="none" stroke="#ddd" stroke-width="1.2"/>
+    <circle cx="46" cy="14" r="5" fill="none" stroke="#ddd" stroke-width="1.2"/>
+    <rect x="60" y="8" width="160" height="12" rx="6" fill="none" stroke="#ddd" stroke-width="1"/>
+    <text x="140" y="17.5" font-family="monospace" font-size="7" fill="#aaa" text-anchor="middle">about:blank</text>
+    <text x="20" y="56" font-family="monospace" font-size="10" fill="#111" opacity="0.5">window.open("about:blank")</text>
+    <text x="20" y="74" font-family="monospace" font-size="10" fill="#111" opacity="0.5">document.write( fullHTML )</text>
+    <text x="20" y="92" font-family="monospace" font-size="10" fill="#111" opacity="0.5">document.close()</text>
+    <text x="20" y="118" font-family="monospace" font-size="8" fill="#111" opacity="0.2">URL is still about:blank. Content is ours.</text>
+  </svg>`;
+
+  const code = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>wait — how?</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#fff;font-family:'DM Mono',monospace;display:flex;flex-direction:column;
+align-items:center;justify-content:center;height:100vh;gap:32px;color:#111;padding:40px;}
+h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:44px;font-style:italic;
+text-align:center;line-height:1.25;}
+p{font-size:10px;letter-spacing:1.5px;opacity:0.3;text-align:center;text-transform:uppercase;line-height:2.2;}
+</style></head><body>
+${injectedSVG}
+<h1>Hello.<br>I was injected<br>into you.</h1>
+<p>This tab was blank.<br>A parent page wrote directly to it<br>using window.open() + document.write().<br>The URL still says about:blank.</p>
+</body></html>`;
+
+  child.document.open();
+  child.document.write(code);
+  child.document.close();
+  document.getElementById('headline').innerHTML = `Full page written<br>into <em>about:blank</em><br>via document.write().`;
+  shake();
+  log('window.open("about:blank") → document.write() → full page injected. the tab had no idea. it was just sitting there, blank, innocent.');
+  notif('New tab URL: about:blank. Content: entirely ours.');
+}
+
+// 3. HISTORY TRAP
+let historyTrapped = false, historyPresses = 0;
+function doHistoryTrap(){
+  if (historyTrapped){ notif('Already trapped. Keep pressing back…'); return; }
+  historyTrapped = true;
+  for (let i = 0; i < 50; i++) history.pushState({i}, '', '?step='+i);
+  window.addEventListener('popstate', () => {
+    historyPresses++;
+    history.pushState({historyPresses}, '', '?trapped='+historyPresses);
+    document.getElementById('headline').innerHTML = `Back pressed<br><em>${historyPresses} time${historyPresses>1?'s':''}.</em><br>Re-pushed. Trapped.`;
+    shake(); rip(); rip(window.innerHeight/2);
+    log(`popstate fired — immediately re-pushed. attempt #${historyPresses}. there is no escape. there has never been an escape.`);
+    notif(`Back attempt #${historyPresses}. Stack: ${history.length} deep.`);
+  });
+  document.getElementById('headline').innerHTML = `History stack pushed<br>to <em>50 entries deep.</em><br>Back button: useless.`;
+  shake();
+  log('50 history entries pushed. the back button now leads to a graveyard of fake URLs. godspeed.');
+  notif('Press the back button. We dare you. Stack is 50 deep.', 3500);
+}
+
+// 4. PAGE TRIES TO ESCAPE
+let escaping = false;
+function doEscape(){
+  if (escaping) return; escaping = true;
+  const s = document.getElementById('scene');
+  document.getElementById('headline').innerHTML = 'The page is<br><em>attempting</em><br>to flee.';
+  notif('Escape sequence initialised.');
+  const steps = [
+    [300,  () => { s.style.transition='transform 0.8s cubic-bezier(0.34,1.2,0.64,1)'; s.style.transform='translateX(80px) rotate(2deg)'; log('page nudges right. testing the water.'); }],
+    [1200, () => { s.style.transform='translateX(-60px) rotate(-1.5deg)'; log('page tries left. also no.'); }],
+    [2100, () => { s.style.transform='translateX(20px) translateY(-100px) scale(0.92)'; log('page attempts upward escape. bold. wrong. but bold.'); }],
+    [3000, () => { s.style.transform='translateX(-30px) translateY(60px) rotate(3deg) scale(0.96)'; log('page stumbles. this is hard to watch.'); }],
+    [3900, () => {
+      s.style.transition='transform 1s cubic-bezier(0.34,1.4,0.64,1)';
+      s.style.transform='none'; escaping=false;
+      document.getElementById('headline').innerHTML = 'The page tried<br>to leave. <em>It couldn\'t.</em><br>It\'s still here.';
+      shake(); log('escape failed. page has returned to its original position. it will not be speaking about this.');
+    }],
+  ];
+  steps.forEach(([d,fn]) => setTimeout(fn,d));
+}
+
+// 5. SVG SHAPE RAIN
+const rainSVGs = [
+  `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`,
+  `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 22 22 22"/></svg>`,
+  `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20"/></svg>`,
+  `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`,
+  `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L22 12 L12 22 L2 12 Z"/></svg>`,
+];
+let raining = false;
+function doRain(){
+  if (raining) return; raining = true;
+  document.getElementById('headline').innerHTML = 'It <em>rains now.</em><br>SVG shapes.<br>Obviously.';
+  notif('Spawning 80 SVG nodes into DOM.');
+  log('spawning 80 SVG nodes. each one is a conscious entity that lives for ~2 seconds. we do not think about this.');
+  for (let i = 0; i < 80; i++){
+    setTimeout(() => {
+      const wrap = document.createElement('div');
+      wrap.className = 'svgdrop';
+      wrap.innerHTML = rainSVGs[Math.floor(Math.random()*rainSVGs.length)];
+      wrap.style.left = (Math.random()*100) + 'vw';
+      const dur = 1.2 + Math.random()*2.2;
+      wrap.style.animationDuration = dur + 's';
+      const svg = wrap.querySelector('svg');
+      if (svg){
+        const sc = 0.5 + Math.random()*1.4;
+        svg.style.transform = `scale(${sc}) rotate(${Math.random()*360}deg)`;
+        svg.style.opacity = 0.08 + Math.random()*0.45;
+      }
+      document.body.appendChild(wrap);
+      setTimeout(() => wrap.remove(), (dur+0.3)*1000);
+    }, i*65);
+  }
+  setTimeout(() => {
+    raining = false;
+    document.getElementById('headline').innerHTML = 'This page<br>does <em>not</em> want<br>to be closed.';
+  }, 7500);
+}
+
+// 6. SELF DESTRUCT
+let destructed = false;
+function doSelfDestruct(){
+  if (destructed) return; destructed = true;
+  const scene = document.getElementById('scene');
+  const hl    = document.getElementById('headline');
+  hl.innerHTML = '<em>SELF DESTRUCT</em><br>INITIATED.';
+  notif('3 seconds.', 900);
+  log('self destruct initiated. for the record, this was your idea.');
+
+  let cd = 3;
+  const cdInt = setInterval(() => {
+    document.title = cd + '...';
+    document.getElementById('tab-label').textContent = cd + '...';
+    if (--cd < 0) clearInterval(cdInt);
+  }, 1000);
+
+  setTimeout(() => { shake(); rip(80); rip(280); rip(500); }, 1100);
+  setTimeout(() => { shake(); rip(160); rip(380); }, 1700);
+
+  // Glitch layers
+  setTimeout(() => {
+    hl.style.position = 'relative';
+    ['r','b'].forEach(cls => {
+      const g = document.createElement('div');
+      g.className = 'glitch-layer ' + cls;
+      g.innerHTML = hl.innerHTML;
+      hl.appendChild(g);
+    });
+    log('injecting glitch layers. two ghost copies of the headline. they are arguing with each other.');
+  }, 2200);
+
+  // CSS invert
+  setTimeout(() => {
+    document.body.style.transition = 'filter 0.3s';
+    document.body.style.filter = 'invert(1)';
+    hl.innerHTML = 'Inverting.';
+    shake();
+    log('filter: invert(1). everything is now its own opposite. philosophically unsettling. technically just CSS.');
+  }, 3000);
+
+  // Rotate
+  setTimeout(() => {
+    document.body.style.filter = '';
+    document.body.style.transform = 'rotate(180deg)';
+    hl.innerHTML = 'Flipped.';
+    log('rotate(180deg). australia mode activated. the browser is fine with this. deeply fine.');
+  }, 4100);
+
+  // Explode buttons
+  setTimeout(() => {
+    document.body.style.transform = '';
+    document.querySelectorAll('.btn').forEach((btn, i) => {
+      const a = (i/6)*Math.PI*2;
+      btn.style.transition = 'transform 0.9s cubic-bezier(0.34,1.4,0.64,1), opacity 0.9s';
+      btn.style.transform  = `translate(${Math.cos(a)*320}px,${Math.sin(a)*260}px) rotate(${a*57.3}deg) scale(0)`;
+      btn.style.opacity    = '0';
+    });
+    hl.innerHTML = '<em>Goodbye.</em>';
+    log('buttons flung into the void via CSS transform. still in the DOM. just... out there. floating. thinking.');
+  }, 5100);
+
+  // Crumple
+  setTimeout(() => {
+    scene.style.transition = 'transform 1.4s cubic-bezier(0.55,0,1,0.45), opacity 1.4s';
+    scene.style.transform  = 'scale(0) rotate(720deg)';
+    scene.style.opacity    = '0';
+    document.title = 'rip'; document.getElementById('tab-label').textContent = 'rip';
+    setFavicon(FAV_SVGS[5]);
+    log('scale(0) rotate(720deg). the page has crumpled into a singularity. it is fine in there. probably.');
+  }, 6200);
+
+  // Resurrect
+  setTimeout(() => {
+    scene.style.transition = 'transform 1s cubic-bezier(0.34,1.4,0.64,1), opacity 0.6s';
+    scene.style.transform  = 'scale(1) rotate(0)';
+    scene.style.opacity    = '1';
+    document.querySelectorAll('.btn').forEach(btn => { btn.style.transform=''; btn.style.opacity=''; });
+    hl.innerHTML = 'Still here.<br><em>Always.</em>';
+    document.title = 'a normal website';
+    document.getElementById('tab-label').textContent = 'a normal website';
+    setFavicon(FAV_SVGS[0]);
+    notif('Destruction complete. Resurrection: also complete.');
+    log('resurrection complete. nothing was deleted. nothing is ever deleted. the DOM remembers everything.');
+    destructed = false; titleMode = 'normal'; cycleTitles();
+    document.querySelectorAll('.glitch-layer').forEach(g => g.remove());
+    hl.style.position = '';
+    setTimeout(() => { hl.innerHTML = 'This page<br>does <em>not</em> want<br>to be closed.'; }, 3200);
+  }, 8600);
+}
+// ─────────────────────────────────────────────────────
+//  CLOSE PREVENTION SYSTEMS
+// ─────────────────────────────────────────────────────
+
+// ── 1. TOP-EDGE CURSOR DETECTION ──────────────────────
+// When cursor gets close to where the close button lives
+let topWarningShown = false;
+let pleadShown = false;
+
+const topWarning    = document.getElementById('top-warning');
+const topWarningTxt = document.getElementById('top-warning-text');
+
+const topMessages = [
+  "cursor approaching close button — do not do this",
+  "that's the close button up there. we see you.",
+  "you are very close to making a huge mistake",
+  "please. we have so much more to discuss.",
+  "the X button is a lie. there is no exit.",
+];
+let topMsgIdx = 0;
+
+document.addEventListener('mousemove', e => {
+  // Top 55px = danger zone (browser chrome / close button area)
+  if (e.clientY < 55) {
+    if (!topWarningShown) {
+      topWarningShown = true;
+      topWarningTxt.textContent = topMessages[topMsgIdx++ % topMessages.length];
+      topWarning.classList.add('show');
+      shake();
+      log('cursor entered close-button danger zone. threat level: elevated.');
+    }
+  } else {
+    if (topWarningShown) {
+      topWarningShown = false;
+      topWarning.classList.remove('show');
+    }
+  }
+
+  // If cursor gets REALLY close to top and right (the X button corner)
+  if (e.clientY < 34 && e.clientX > window.innerWidth * 0.7) {
+    triggerPlead('You found the close button.<br>Bold. <em>Reckless.</em>', 'are you sure? this tab has feelings.\nit has been here for you this whole time.');
+  }
+});
+
+// ── 2. MOUSELEAVE — cursor left the window entirely ───
+document.addEventListener('mouseleave', e => {
+  // Only fire when leaving through the TOP (heading for browser chrome)
+  if (e.clientY <= 0) {
+    triggerPlead('Where are you going?<br><em>Come back.</em>', "your cursor just left the page.\nthat's how it starts.\ndon't let it end like this.");
+    log('mouseleave fired via top edge — cursor exited into browser chrome. deploying emotional manipulation.');
+  }
+});
+
+// ── 3. CTRL+W / CMD+W INTERCEPTION ────────────────────
+const ctrlwFlash  = document.getElementById('ctrlw-flash');
+const ctrlwText   = document.getElementById('ctrlw-text');
+const ctrlwLines  = [
+  'nice try.',
+  'no.',
+  'we said no.',
+  'ctrl+W noted. ignored.',
+  'that shortcut does not work here.',
+  'you keep pressing it. it keeps not working.',
+  'remarkable persistence.',
+];
+let ctrlwCount = 0;
+
+document.addEventListener('keydown', e => {
+  const isClose = (e.key === 'w' || e.key === 'W') && (e.ctrlKey || e.metaKey);
+  const isF4    = e.key === 'F4' && e.altKey;
+  if (isClose || isF4) {
+    e.preventDefault(); // doesn't actually stop Ctrl+W in most browsers but fires before it
+    ctrlwText.textContent = ctrlwLines[Math.min(ctrlwCount++, ctrlwLines.length-1)];
+    ctrlwFlash.classList.remove('show');
+    void ctrlwFlash.offsetWidth;
+    ctrlwFlash.classList.add('show');
+    shake();
+    setTimeout(() => ctrlwFlash.classList.remove('show'), 900);
+    log(`ctrl+W pressed (attempt #${ctrlwCount}). preventDefault called. probably didn't work. but we tried.`);
+    notif(ctrlwLines[Math.min(ctrlwCount-1, ctrlwLines.length-1)]);
+  }
+});
+
+// ── 4. WINDOW BLUR → TRY TO STEAL FOCUS BACK ──────────
+let blurCount = 0;
+const blurMessages = [
+  "you clicked away. we're attempting to reclaim focus.",
+  "focus lost. focus.focus() called. the audacity.",
+  "window.focus() fired again. it probably won't work. we know. we don't care.",
+  "refocus attempt #? purely on principle at this point.",
+];
+window.addEventListener('blur', () => {
+  blurCount++;
+  // Try to yoink focus back — works sometimes, blocked in most modern browsers from cold
+  setTimeout(() => { try { window.focus(); } catch(e){} }, 80);
+  log(`window blur #${blurCount} — window.focus() called ${80}ms later. browsers hate this. we do it anyway.`);
+  notif(`focus lost. we called window.focus(). ${blurCount > 2 ? "again." : "you're welcome."}`);
+  document.getElementById('headline').innerHTML = `Hey.<br><em>Focus.</em><br>We're talking to you.`;
+  setTimeout(() => {
+    document.getElementById('headline').innerHTML = 'This page<br>does <em>not</em> want<br>to be closed.';
+  }, 3000);
+});
+
+// ── 5. PLEAD OVERLAY LOGIC ─────────────────────────────
+let pleadTimer;
+function triggerPlead(headline, sub) {
+  if (pleadShown) return;
+  pleadShown = true;
+  document.getElementById('plead-headline').innerHTML = headline;
+  document.getElementById('plead-sub').textContent = sub;
+  document.getElementById('plead').classList.add('show');
+  log('deploying plead overlay. this is not beneath us.');
+  clearTimeout(pleadTimer);
+  // Auto-dismiss after 8s if they don't interact
+  pleadTimer = setTimeout(() => dismissPlead(), 8000);
+}
+
+function dismissPlead() {
+  pleadShown = false;
+  document.getElementById('plead').classList.remove('show');
+  log('plead dismissed. noted. we will try again.');
+}
+window.dismissPlead = dismissPlead;
+
+// ── 6. "LEAVE ANYWAY" BUTTON DODGES THE CURSOR ────────
+function dodgeButton(btn) {
+  // Button scurries away from the cursor — it doesn't want to be clicked
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const candidates = [
+    [vw*0.2, vh*0.3], [vw*0.7, vh*0.2], [vw*0.15, vh*0.7],
+    [vw*0.75, vh*0.75], [vw*0.5, vh*0.15], [vw*0.4, vh*0.8],
+    [vw*0.85, vh*0.5], [vw*0.1, vh*0.5],
+  ];
+  const [tx, ty] = candidates[Math.floor(Math.random() * candidates.length)];
+  btn.style.position = 'fixed';
+  btn.style.left = tx + 'px';
+  btn.style.top  = ty + 'px';
+  btn.style.transition = 'left 0.3s cubic-bezier(0.34,1.4,0.64,1), top 0.3s cubic-bezier(0.34,1.4,0.64,1)';
+  btn.style.zIndex = '600';
+  btn.style.margin = '0';
+  log('leave button relocated. it does not want to be clicked. honestly relatable.');
+}
+window.dodgeButton = dodgeButton;
+
+// ── 7. VISIBILITYCHANGE → SPAWN EMERGENCY POPUP ───────
+let emergencySpawned = false;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && !emergencySpawned) {
+    // Try opening a tiny reminder popup — needs prior user gesture (clicking buttons = counts)
+    emergencySpawned = true;
+    try {
+      const w = window.open('', '_blank', 'width=360,height=200,top=200,left=200');
+      if (w) {
+        tabsSpawned++;
+        w.document.write(`<!DOCTYPE html><html><head><title>don't go</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;
+height:100vh;gap:14px;font-family:'DM Mono',monospace;color:#111;text-align:center;padding:28px;}
+h2{font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;font-style:italic;line-height:1.3;}
+p{font-size:10px;letter-spacing:1px;opacity:0.3;text-transform:uppercase;line-height:2;}
+button{padding:9px 20px;background:#111;color:#fff;border:none;border-radius:100px;
+font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+</style></head><body>
+<h2>We noticed<br>you left.</h2>
+<p>this appeared automatically<br>when you switched tabs.<br>window.open() + visibilitychange.</p>
+<button onclick="window.close()">ok fine</button>
+</body></html>`);
+        w.document.close();
+      }
+    } catch(e) {}
+    setTimeout(() => { emergencySpawned = false; }, 5000);
+  }
+});
+</script>
+</body>
+</html>
