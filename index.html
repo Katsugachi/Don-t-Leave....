@@ -90,11 +90,39 @@ body.shaking{animation:shake 0.45s ease-out;}
 .glitch-layer.r{animation:glitch-h 0.25s steps(1) infinite;color:#c00;mix-blend-mode:multiply;}
 .glitch-layer.b{animation:glitch-h 0.25s steps(1) infinite 0.07s;color:#00c;mix-blend-mode:multiply;}
 
+/* ── FULLSCREEN ───────────────────────── */
+:fullscreen #statusbar,
+:-webkit-full-screen #statusbar { display: none; }
+:fullscreen #scene,
+:-webkit-full-screen #scene { padding-top: 0; }
+/* Faint "you are fullscreen" watermark so they know */
+:fullscreen body::after,
+:-webkit-full-screen body::after {
+  content: 'FULLSCREEN ACTIVE';
+  position: fixed;
+  bottom: 42px; right: 20px;
+  font-size: 8px; letter-spacing: 2px;
+  opacity: 0.1; pointer-events: none;
+  text-transform: uppercase;
+}
+
 /* ── SVG RAIN ────────────────────────── */
 .svgdrop{position:fixed;top:-60px;pointer-events:none;z-index:200;animation:fall linear forwards;}
 @keyframes fall{to{top:110vh;opacity:0;}}
 
-/* ── TOP EDGE WARNING ────────────────── */
+/* ── FULLSCREEN BANNER ───────────────── */
+#fs-banner{
+  position:fixed;bottom:42px;left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:#fff;border:1px solid #ddd;
+  padding:10px 20px;border-radius:6px;
+  font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  z-index:400;opacity:0;white-space:nowrap;
+  transition:transform 0.35s cubic-bezier(0.34,1.4,0.64,1),opacity 0.35s;
+  pointer-events:none;
+}
+#fs-banner.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
 #top-warning{
   position:fixed;top:34px;left:0;right:0;
   height:0;overflow:hidden;
@@ -117,6 +145,36 @@ body.shaking{animation:shake 0.45s ease-out;}
 #ctrlw-text{font-family:'Instrument Serif',serif;font-size:clamp(36px,6vw,64px);font-style:italic;text-align:center;}
 @keyframes ctrlwpop{from{transform:scale(0.5);opacity:0;}to{transform:scale(1);opacity:1;}}
 #ctrlw-flash.show #ctrlw-text{animation:ctrlwpop 0.35s cubic-bezier(0.34,1.5,0.64,1);}
+
+/* ── FULLSCREEN LOCKDOWN BAR ─────────── */
+#lockbar{
+  position:fixed;top:0;left:0;right:0;height:34px;
+  background:#111;color:#fff;
+  display:none;align-items:center;justify-content:space-between;
+  padding:0 18px;z-index:9000;
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+}
+#lockbar.show{display:flex;}
+#lockbar svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.lockbar-left{display:flex;align-items:center;gap:8px;}
+.lockbar-right{opacity:0.35;}
+
+/* ── FULLSCREEN EXIT INTERCEPT ───────── */
+#fs-intercept{
+  position:fixed;inset:0;
+  background:rgba(255,255,255,0.97);
+  backdrop-filter:blur(8px);
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:18px;z-index:8000;
+  font-family:'DM Mono',monospace;
+}
+#fs-intercept.show{display:flex;}
+#fs-intercept h2{font-family:'Instrument Serif',serif;font-size:clamp(26px,4vw,42px);font-weight:400;text-align:center;line-height:1.3;}
+#fs-intercept h2 em{font-style:italic;}
+#fs-intercept p{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.3;text-align:center;line-height:2.2;}
+#fs-reenter{padding:11px 28px;background:#111;color:#fff;border:none;border-radius:100px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform 0.15s;}
+#fs-reenter:hover{transform:scale(1.04);}
 
 /* ── PLEAD OVERLAY ───────────────────── */
 #plead{
@@ -157,6 +215,22 @@ body.shaking{animation:shake 0.45s ease-out;}
   <div>TABS <span id="tabcount">0</span></div>
 </div>
 
+<div id="fs-banner">fullscreen active. escape detected and blocked.</div>
+
+<div id="lockbar">
+  <div class="lockbar-left">
+    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    <span id="lockbar-text">secure session active. fullscreen enforced.</span>
+  </div>
+  <div class="lockbar-right">esc will not save you</div>
+</div>
+
+<div id="fs-intercept">
+  <h2>You pressed Esc.<br><em>Adorable.</em></h2>
+  <p>fullscreen has been re-requested.<br>this is your life now.<br>the browser has been informed.</p>
+  <button id="fs-reenter" onclick="reenterFullscreen()">Re-enter fullscreen</button>
+</div>
+
 <div id="top-warning">
   <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
   <span id="top-warning-text">cursor approaching close button. do not.</span>
@@ -175,7 +249,7 @@ body.shaking{animation:shake 0.45s ease-out;}
 
 <div id="scene">
   <h1 id="headline">This page<br>does <em>not</em> want<br>to be closed.</h1>
-  <div id="sub">here are some buttons</div>
+  <div id="sub">here are some buttons.</div>
 
   <div id="buttons">
     <button class="btn" onclick="doTabCloak()">
@@ -308,7 +382,7 @@ function cycleTitles() {
 cycleTitles();
 
 // ── VISIBILITY CHANGE ─────────────────────────────
-var emergencySpawned = false;
+var emergencyPopup = null;
 
 document.addEventListener('visibilitychange', function() {
   if (document.hidden) {
@@ -316,12 +390,11 @@ document.addEventListener('visibilitychange', function() {
     cycleTitles();
     log('tab hidden. switching to panic mode. yes, we noticed. we always notice.');
 
-    // Only ever spawn once per page load
-    if (!emergencySpawned) {
-      emergencySpawned = true; // never resets — one popup, ever
-      try {
-        var w = window.open('', '_blank', 'width=360,height=220,top=200,left=200');
-        if (w) {
+    try {
+      // Reuse the existing popup if it's still open, otherwise open a fresh one
+      if (!emergencyPopup || emergencyPopup.closed) {
+        emergencyPopup = window.open('', '_blank', 'width=360,height=220,top=200,left=200');
+        if (emergencyPopup) {
           tabsSpawned++;
           var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>hey</title>'
             + '<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400&display=swap" rel="stylesheet">'
@@ -334,15 +407,19 @@ document.addEventListener('visibilitychange', function() {
             + 'font-family:"DM Mono",monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}'
             + '</style></head><body>'
             + '<h2>We noticed<br>you left.</h2>'
-            + '<p>this appeared automatically<br>when you switched tabs.<br>visibilitychange + window.open().<br>it only does this once. we\'re not monsters.</p>'
+            + '<p>this appeared automatically<br>when you switched tabs.<br>visibilitychange + window.open().<br>it will keep doing this.</p>'
             + '<button onclick="window.close()">ok fine</button>'
             + '</body></html>';
-          w.document.open();
-          w.document.write(html);
-          w.document.close();
+          emergencyPopup.document.open();
+          emergencyPopup.document.write(html);
+          emergencyPopup.document.close();
         }
-      } catch(e) {}
-    }
+      } else {
+        // Popup already exists — just focus it to bring it to front
+        emergencyPopup.focus();
+        log('tab hidden. popup already open. bringing it forward. you know the drill.');
+      }
+    } catch(e) {}
 
   } else {
     titleMode = 'normal';
@@ -366,6 +443,65 @@ setInterval(function() {
   }
   document.getElementById('tabcount').textContent = tabsSpawned;
 }, 900);
+
+// ── FULLSCREEN LOCKDOWN ───────────────────────────
+var fullscreenArmed  = false;
+var fullscreenActive = false;
+var fsReentryCount   = 0;
+var fsBanner         = document.getElementById('fs-banner');
+var fsBannerTimer    = null;
+
+function showFsBanner(msg) {
+  fsBanner.textContent = msg;
+  fsBanner.classList.add('show');
+  clearTimeout(fsBannerTimer);
+  fsBannerTimer = setTimeout(function() { fsBanner.classList.remove('show'); }, 2800);
+}
+
+function enterFullscreen() {
+  var el = document.documentElement;
+  var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) { req.call(el).catch(function() {}); }
+}
+
+// First click anywhere = go fullscreen (user gesture required by browser)
+document.addEventListener('click', function armFs() {
+  if (!fullscreenArmed) {
+    fullscreenArmed = true;
+    enterFullscreen();
+    log('first click detected. requesting fullscreen. the walls are closing in.');
+    document.removeEventListener('click', armFs);
+  }
+}, true);
+
+// Fight back every time they press Escape
+function onFsChange() {
+  var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+  if (isFs) {
+    fullscreenActive = true;
+    showFsBanner('fullscreen active. good luck leaving.');
+    log('entered fullscreen. exam mode engaged. ctrl+W still works though. we are aware.');
+  } else if (fullscreenActive) {
+    fullscreenActive = false;
+    fsReentryCount++;
+    var msgs = [
+      'escape detected. re-entering. obviously.',
+      'pressing escape, are we. cute.',
+      'attempt #' + fsReentryCount + '. it will not work.',
+      'we can do this all day.',
+      'the browser allows this. unfortunately for you.',
+      'escape key: noted. ignored. re-entered.',
+    ];
+    var msg = msgs[Math.min(fsReentryCount - 1, msgs.length - 1)];
+    showFsBanner(msg);
+    shake();
+    log('fullscreenchange: escaped. re-requesting in 100ms. attempt #' + fsReentryCount + '. this is technically legal.');
+    setTimeout(function() { enterFullscreen(); }, 100);
+  }
+}
+document.addEventListener('fullscreenchange', onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
+document.addEventListener('mozfullscreenchange', onFsChange);
 
 
 // ─────────────────────────────────────────────────
@@ -677,7 +813,55 @@ function doRain() {
   }, 7500);
 }
 
-// 6. SELF DESTRUCT
+// ─────────────────────────────────────────────────
+//  FULLSCREEN TRAP
+// ─────────────────────────────────────────────────
+
+var fullscreenEngaged = false;
+
+function requestFS() {
+  var el = document.documentElement;
+  var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) {
+    req.call(el).catch(function() {});
+  }
+}
+
+// Fire on first click anywhere — this is a valid user gesture
+document.addEventListener('click', function() {
+  if (!fullscreenEngaged) {
+    fullscreenEngaged = true;
+    requestFS();
+    log('requestFullscreen() called on first click. welcome to exam mode. there is no invigilator.');
+    notif('Fullscreen engaged. Ctrl+W still works. Probably.');
+  }
+}, { once: true });
+
+// When fullscreen exits (Escape, or browser UI), immediately re-request it
+document.addEventListener('fullscreenchange', function() {
+  if (!document.fullscreenElement) {
+    // Small delay so the browser doesn't block it as a non-gesture call
+    setTimeout(function() {
+      requestFS();
+      shake();
+      log('fullscreenchange: exited. re-requesting. this is not over.');
+      notif('Nice try. Re-entering fullscreen.');
+      setHeadline('You thought<br><em>Escape</em> would work.<br>Cute.');
+      setTimeout(function() {
+        setHeadline('This page<br>does <em>not</em> want<br>to be closed.');
+      }, 3000);
+    }, 200);
+  } else {
+    log('fullscreen active. you are now locked in. conceptually. ctrl+W still works. we have made peace with this.');
+  }
+});
+
+// Webkit variant (Safari)
+document.addEventListener('webkitfullscreenchange', function() {
+  if (!document.webkitFullscreenElement) {
+    setTimeout(function() { requestFS(); }, 200);
+  }
+});
 var destructed = false;
 
 function doSelfDestruct() {
@@ -766,6 +950,100 @@ function doSelfDestruct() {
     setTimeout(function() { setHeadline('This page<br>does <em>not</em> want<br>to be closed.'); }, 3200);
   }, 8600);
 }
+// ─────────────────────────────────────────────────
+//  FULLSCREEN TRAP
+// ─────────────────────────────────────────────────
+
+var fsActive = false;
+var fsFirstGesture = false;
+var fsExitCount = 0;
+var fsIntercept = document.getElementById('fs-intercept');
+var lockbar = document.getElementById('lockbar');
+
+var lockbarMessages = [
+  'secure session active. fullscreen enforced.',
+  'escape attempt logged. nice try.',
+  'this is fine. you are fine. stay in fullscreen.',
+  'session locked. do not attempt to resize.',
+  'fullscreen depth: ' + document.fullscreenEnabled,
+];
+
+function enterFullscreen() {
+  var el = document.documentElement;
+  var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) {
+    req.call(el).then(function() {
+      fsActive = true;
+      lockbar.classList.add('show');
+      // hide the fake status bar, lockbar replaces it
+      document.getElementById('statusbar').style.display = 'none';
+      log('requestFullscreen() succeeded. the page is now the entire world. you are welcome.');
+      notif('Fullscreen engaged. This is your life now.');
+    }).catch(function() {
+      log('requestFullscreen() rejected. browsers are increasingly wise to us.');
+    });
+  }
+}
+
+function reenterFullscreen() {
+  fsIntercept.classList.remove('show');
+  setTimeout(enterFullscreen, 100);
+  log('re-entering fullscreen. the user thought they escaped. they did not.');
+}
+
+// Fire fullscreen on the very first click anywhere on the page
+document.addEventListener('click', function onFirstGesture() {
+  if (!fsFirstGesture) {
+    fsFirstGesture = true;
+    document.removeEventListener('click', onFirstGesture);
+    enterFullscreen();
+    log('first user gesture detected. hijacking it to call requestFullscreen(). this is legal. morally questionable.');
+  }
+}, true); // capture phase so it fires before anything else
+
+// Listen for fullscreen exit (Esc key, browser controls, etc.)
+document.addEventListener('fullscreenchange', function() {
+  if (!document.fullscreenElement && fsActive) {
+    fsActive = false;
+    fsExitCount++;
+
+    var msgs = [
+      ['You pressed Esc.<br><em>Adorable.</em>',          'fullscreen has been re-requested.\nthis is your life now.'],
+      ['Oh, you found<br>the exit. <em>Cute.</em>',       'exiting fullscreen does not close the tab.\nwe\'re still here. always here.'],
+      ['Exit attempt #' + fsExitCount + '.<br><em>Bold.</em>', 'at this point it\'s a game.\nyou won\'t win.\nbut we respect the effort.'],
+      ['Still trying?<br><em>Respect.</em>',              'fullscreen exit #' + fsExitCount + ' logged.\nre-entering momentarily.'],
+    ];
+    var msg = msgs[Math.min(fsExitCount - 1, msgs.length - 1)];
+
+    document.getElementById('fs-intercept').querySelector('h2').innerHTML = msg[0];
+    document.getElementById('fs-intercept').querySelector('p').textContent = msg[1];
+    fsIntercept.classList.add('show');
+    lockbar.classList.remove('show');
+    document.getElementById('statusbar').style.display = 'flex';
+
+    shake();
+    log('fullscreenchange fired — element is null — user escaped. showing intercept. re-entry queued.');
+    notif('Fullscreen exit detected. Counter-measures deployed.');
+
+    // Auto re-request after 3s if they don't click the button
+    setTimeout(function() {
+      if (!document.fullscreenElement) {
+        fsIntercept.classList.remove('show');
+        setTimeout(enterFullscreen, 80);
+        log('auto re-entering fullscreen after timeout. did you really think waiting would help?');
+      }
+    }, 3000);
+  }
+});
+
+// Also update lockbar text periodically
+var lockbarIdx = 0;
+setInterval(function() {
+  if (fsActive) {
+    lockbarIdx = (lockbarIdx + 1) % lockbarMessages.length;
+    document.getElementById('lockbar-text').textContent = lockbarMessages[lockbarIdx];
+  }
+}, 3000);
 
 </script>
 </body>
